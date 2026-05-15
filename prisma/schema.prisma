@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                   String        @id @default(cuid()) @db.VarChar(50)
+  name                 String        @db.VarChar(255)
+  email                String        @unique @db.VarChar(255)
+  passwordHash         String        @db.VarChar(255)
+  phone                String?       @db.VarChar(20)
+  role                 UserRole      @default(VIEWER)
+  status               UserStatus    @default(ACTIVE)
+  avatar               String?       @db.VarChar(10)
+  lastLogin            DateTime?     @db.Timestamp(0)
+  joinedAt             DateTime      @default(now())
+  
+  // New fields for temporary password feature
+  isTemporaryPassword  Boolean       @default(true)
+  passwordResetToken   String?       @db.VarChar(255)
+  passwordResetExpires DateTime?
+  
+  userDevices          UserDevice[]
+
+  @@map("users")
+}
+
+model Device {
+  id          String        @id @db.VarChar(50) // e.g., 'ESP32-001'
+  name        String        @db.VarChar(255)
+  location    String        @db.VarChar(255)
+  status      DeviceStatus  @default(OFFLINE)
+  coInput     Float         @default(0) @map("co_input")
+  coOutput    Float         @default(0) @map("co_output")
+  reduction   Float         @default(0)
+  uptime      String?       @db.VarChar(50)
+  lastSeen    DateTime?     @db.Timestamp(0) @map("last_seen")
+  firmware    String?       @db.VarChar(50)
+  ipAddress   String?       @db.VarChar(50) @map("ip_address")
+  macAddress  String?       @db.VarChar(50) @map("mac_address")
+  installedAt DateTime?     @map("installed_at")
+  
+  userDevices UserDevice[]
+  readings    Reading[]
+  alerts      Alert[]
+
+  @@map("devices")
+}
+
+model UserDevice {
+  userId   String @map("user_id") @db.VarChar(50)
+  deviceId String @map("device_id") @db.VarChar(50)
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@id([userId, deviceId])
+  @@map("user_devices")
+}
+
+model Reading {
+  id                  Int           @id @default(autoincrement())
+  deviceId            String?       @map("device_id") @db.VarChar(50)
+  inputPpm            Float         @map("input_ppm")
+  outputPpm           Float         @map("output_ppm")
+  reductionPercentage Float         @map("reduction_percentage")
+  status              ReadingStatus @default(NORMAL)
+  recordedAt          DateTime      @default(now()) @db.Timestamp(0) @map("recorded_at")
+
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("readings")
+}
+
+model Alert {
+  id        Int        @id @default(autoincrement())
+  deviceId  String?    @map("device_id") @db.VarChar(50)
+  level     AlertLevel
+  message   String     @db.Text
+  location  String?    @db.VarChar(255)
+  createdAt DateTime   @default(now()) @db.Timestamp(0) @map("created_at")
+
+  device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+
+  @@map("alerts")
+}
+
+enum UserRole {
+  ADMIN    @map("admin")
+  OPERATOR @map("operator")
+  VIEWER   @map("viewer")
+}
+
+enum UserStatus {
+  ACTIVE    @map("active")
+  INACTIVE  @map("inactive")
+  SUSPENDED @map("suspended")
+}
+
+enum DeviceStatus {
+  ONLINE  @map("online")
+  OFFLINE @map("offline")
+  WARNING @map("warning")
+}
+
+enum ReadingStatus {
+  NORMAL   @map("Normal")
+  WARNING  @map("Warning")
+  CRITICAL @map("Critical")
+}
+
+enum AlertLevel {
+  INFO     @map("info")
+  WARNING  @map("warning")
+  CRITICAL @map("critical")
+  RESOLVED @map("resolved")
+}
