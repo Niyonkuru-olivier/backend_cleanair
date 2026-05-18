@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as sgMail from '@sendgrid/mail';
+import sgMail = require('@sendgrid/mail');
 import { ConfigService } from '@nestjs/config';
 
 @Injectable()
@@ -21,7 +21,7 @@ export class MailService {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const loginUrl = `${frontendUrl}/login`;
     const systemName = 'CleanAir System';
-    const mailFrom = this.configService.get<string>('MAIL_FROM');
+    const mailFrom = this.configService.get<string>('MAIL_FROM') || 'noreply@cleanairsystem.com';
 
     const msg = {
       to,
@@ -49,7 +49,7 @@ export class MailService {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(to)}`;
     const systemName = 'CleanAir System';
-    const mailFrom = this.configService.get<string>('MAIL_FROM');
+    const mailFrom = this.configService.get<string>('MAIL_FROM') || 'noreply@cleanairsystem.com';
 
     const msg = {
       to,
