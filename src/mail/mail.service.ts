@@ -1,6 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as nodemailer from 'nodemailer';
 import { ConfigService } from '@nestjs/config';
+import * as dns from 'dns';
+
+// Fix for Render IPv6 ENETUNREACH error with Nodemailer
+dns.setDefaultResultOrder('ipv4first');
 
 @Injectable()
 export class MailService {
