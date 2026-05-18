@@ -14,15 +14,12 @@ export class MailService {
   constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('SMTP_HOST'),
-      port: 587, // Try 587 with IPv4
-      secure: false, // STARTTLS
-      requireTLS: true,
+      port: this.configService.get<number>('SMTP_PORT'),
+      secure: false, // true for 465, false for other ports (like 587)
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
-      connectionTimeout: 20000, // Wait 20 seconds before timing out
-      ...({ family: 4 } as any), // Force IPv4
     });
   }
 
