@@ -20,6 +20,8 @@ export class MailService {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
+      connectionTimeout: 10000, // 10 seconds max wait time
+      ...({ family: 4 } as any), // Force IPv4 to prevent IPv6 hanging
     });
   }
 
