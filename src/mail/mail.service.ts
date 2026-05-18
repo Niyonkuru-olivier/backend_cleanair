@@ -1,47 +1,46 @@
 import { Injectable, Logger } from '@nestjs/common';
-import * as nodemailer from 'nodemailer';
+import * as sgMail from '@sendgrid/mail';
 import { ConfigService } from '@nestjs/config';
-import * as dns from 'dns';
-
-// Fix for Render IPv6 ENETUNREACH error with Nodemailer
-dns.setDefaultResultOrder('ipv4first');
 
 @Injectable()
 export class MailService {
-  private transporter: nodemailer.Transporter;
   private readonly logger = new Logger(MailService.name);
 
   constructor(private configService: ConfigService) {
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.get<string>('SMTP_HOST'),
-      port: this.configService.get<number>('SMTP_PORT'),
-      secure: false, // true for 465, false for other ports (like 587)
-      auth: {
-        user: this.configService.get<string>('SMTP_USER'),
-        pass: this.configService.get<string>('SMTP_PASS'),
-      },
-      connectionTimeout: 10000, // 10 seconds max wait time
-      ...({ family: 4 } as any), // Force IPv4 to prevent IPv6 hanging
-    });
+    // SendGrid's official package uses standard HTTPS (port 443) which Render never blocks!
+    // We reuse your SMTP_PASS environment variable since that contains your SendGrid API key.
+    const sendGridApiKey = this.configService.get<string>('SMTP_PASS');
+    if (sendGridApiKey) {
+      sgMail.setApiKey(sendGridApiKey);
+    } else {
+      this.logger.warn('SendGrid API key (SMTP_PASS) is not defined in environment variables.');
+    }
   }
 
   async sendWelcomeEmail(to: string, name: string, tempPassword: string) {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const loginUrl = `${frontendUrl}/login`;
     const systemName = 'CleanAir System';
+    const mailFrom = this.configService.get<string>('MAIL_FROM');
 
-    const mailOptions = {
-      from: `"${systemName}" <${this.configService.get<string>('MAIL_FROM')}>`,
+    const msg = {
       to,
+      from: {
+        name: systemName,
+        email: mailFrom,
+      },
       subject: `Welcome to ${systemName} - Your Account is Ready`,
       text: `Hi ${name},\n\nYour account has been created on ${systemName}.\n\nHere are your login credentials:\n  Email:              ${to}\n  Temporary Password: ${tempPassword}\n\n👉 Login here: ${loginUrl}\n\nFor security, you will be asked to reset your password on your first login.\n\nIf you did not expect this email, please ignore it.\n\n— The ${systemName} Team`,
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Welcome email sent to ${to}`);
+      await sgMail.send(msg);
+      this.logger.log(`Welcome email sent to ${to} via SendGrid API`);
     } catch (error) {
       this.logger.error(`Failed to send email to ${to}: ${error.message}`);
+      if (error.response) {
+        this.logger.error(JSON.stringify(error.response.body));
+      }
       throw error;
     }
   }
@@ -50,19 +49,26 @@ export class MailService {
     const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
     const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}&email=${encodeURIComponent(to)}`;
     const systemName = 'CleanAir System';
+    const mailFrom = this.configService.get<string>('MAIL_FROM');
 
-    const mailOptions = {
-      from: `"${systemName}" <${this.configService.get<string>('MAIL_FROM')}>`,
+    const msg = {
       to,
+      from: {
+        name: systemName,
+        email: mailFrom,
+      },
       subject: `Reset Your Password - ${systemName}`,
       text: `Hi ${name},\n\nYou requested to reset your password for ${systemName}.\n\n👉 Click the link below to set a new password:\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you did not request this, please ignore this email.\n\n— The ${systemName} Team`,
     };
 
     try {
-      await this.transporter.sendMail(mailOptions);
-      this.logger.log(`Reset password email sent to ${to}`);
+      await sgMail.send(msg);
+      this.logger.log(`Reset password email sent to ${to} via SendGrid API`);
     } catch (error) {
       this.logger.error(`Failed to send reset email to ${to}: ${error.message}`);
+      if (error.response) {
+        this.logger.error(JSON.stringify(error.response.body));
+      }
       throw error;
     }
   }
