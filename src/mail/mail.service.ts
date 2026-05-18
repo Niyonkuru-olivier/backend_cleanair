@@ -14,14 +14,15 @@ export class MailService {
   constructor(private configService: ConfigService) {
     this.transporter = nodemailer.createTransport({
       host: this.configService.get<string>('SMTP_HOST'),
-      port: 465, // Force 465 (Implicit SSL) which is more reliable on Render
-      secure: true, // true for 465
+      port: 587, // Try 587 with IPv4
+      secure: false, // STARTTLS
+      requireTLS: true,
       auth: {
         user: this.configService.get<string>('SMTP_USER'),
         pass: this.configService.get<string>('SMTP_PASS'),
       },
-      // This forces Nodemailer to bypass IPv6 completely during connection
-      ...({ family: 4 } as any),
+      connectionTimeout: 20000, // Wait 20 seconds before timing out
+      ...({ family: 4 } as any), // Force IPv4
     });
   }
 
