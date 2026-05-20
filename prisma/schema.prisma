@@ -32,6 +32,9 @@ model User {
 model Device {
   id          String        @id @db.VarChar(50) // e.g., 'ESP32-001'
   name        String        @db.VarChar(255)
+  type        VehicleType   @default(CAR)
+  owner       String?       @db.VarChar(255)
+  plateOrRef  String?       @db.VarChar(100) @map("plate_or_ref")
   location    String        @db.VarChar(255)
   status      DeviceStatus  @default(OFFLINE)
   coInput     Float         @default(0) @map("co_input")
@@ -105,6 +108,12 @@ enum DeviceStatus {
   ONLINE  @map("online")
   OFFLINE @map("offline")
   WARNING @map("warning")
+}
+
+enum VehicleType {
+  CAR        @map("car")
+  MOTORCYCLE @map("motorcycle")
+  INDUSTRY   @map("industry")
 }
 
 enum ReadingStatus {
