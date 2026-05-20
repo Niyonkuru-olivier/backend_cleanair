@@ -58,7 +58,7 @@ export class MailService {
         email: mailFrom,
       },
       subject: `Reset Your Password - ${systemName}`,
-      text: `Hi ${name},\n\nYou requested to reset your password for ${systemName}.\n\n👉 Click the link below to set a new password:\n${resetUrl}\n\nThis link will expire in 1 hour.\n\nIf you did not request this, please ignore this email.\n\n— The ${systemName} Team`,
+      text: `Hi ${name},\n\nYou requested to reset your password for ${systemName}.\n\n👉 Here is your 6-digit password reset token:\n\n${resetToken}\n\nYou can enter this token to reset your password, or click the link below:\n${resetUrl}\n\nThis token and link will expire in 1 hour.\n\nIf you did not request this, please ignore this email.\n\n— The ${systemName} Team`,
     };
 
     try {

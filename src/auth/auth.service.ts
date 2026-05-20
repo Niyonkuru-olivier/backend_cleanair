@@ -140,8 +140,8 @@ export class AuthService {
       throw new UnauthorizedException('Your account is not active. Please contact the Admin of the system.');
     }
 
-    // Generate a reset token
-    const resetToken = crypto.randomBytes(32).toString('hex');
+    // Generate a 6-digit numeric reset token
+    const resetToken = crypto.randomInt(100000, 1000000).toString();
     const passwordResetExpires = new Date(Date.now() + 3600000); // 1 hour
 
     // Save token to database

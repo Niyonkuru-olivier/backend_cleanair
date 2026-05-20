@@ -21,7 +21,7 @@ export class ResetPasswordDto {
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   newPassword: string;
 
-  @ApiProperty({ example: 'xyz-token', description: 'Reset token sent via email', required: false })
+  @ApiProperty({ example: '123456', description: '6-digit reset token sent via email', required: false })
   @IsOptional()
   token?: string;
 }
