@@ -1,6 +1,6 @@
 import { Controller, Post, Get, Patch, Delete, Param, Body, ValidationPipe, UsePipes, HttpCode, HttpStatus } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { IsEmail, IsNotEmpty, IsEnum, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsEnum, IsOptional, IsString } from 'class-validator';
 import { ApiTags, ApiOperation, ApiResponse, ApiProperty } from '@nestjs/swagger';
 
 export enum UserRole {
@@ -57,6 +57,11 @@ export class UpdateUserDto {
   @ApiProperty({ example: 'newpassword123', description: 'The password', required: false })
   @IsOptional()
   password?: string;
+
+  @ApiProperty({ example: 'ESP32-001', description: 'The device ID to assign to this user', required: false })
+  @IsOptional()
+  @IsString()
+  deviceId?: string;
 }
 
 @ApiTags('admin/users')

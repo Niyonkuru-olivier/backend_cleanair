@@ -1,4 +1,4 @@
-import { Injectable, ConflictException, InternalServerErrorException, NotFoundException } from '@nestjs/common';
+import { Injectable, ConflictException, InternalServerErrorException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
 import { CreateUserDto, UpdateUserDto } from './users.controller';
@@ -111,6 +111,36 @@ export class UsersService {
       }
     }
 
+    if (dto.deviceId) {
+      const targetRole = dto.role || user.role;
+      if (targetRole !== 'VIEWER') {
+        throw new BadRequestException('Devices can only be assigned to users with the role of VIEWER');
+      }
+
+      const device = await this.prisma.device.findUnique({
+        where: { id: dto.deviceId },
+      });
+      if (!device) {
+        throw new NotFoundException(`Device with ID ${dto.deviceId} not found`);
+      }
+
+      const existingAssignment = await this.prisma.userDevice.findFirst({
+        where: {
+          deviceId: dto.deviceId,
+          user: {
+            role: 'VIEWER',
+          },
+          NOT: {
+            userId: id,
+          },
+        },
+      });
+
+      if (existingAssignment) {
+        throw new ConflictException('This device is already assigned to another viewer');
+      }
+    }
+
     const updatedData: any = {
       name: dto.name,
       email: dto.email ? dto.email.toLowerCase() : undefined,
@@ -130,8 +160,42 @@ export class UsersService {
       data: updatedData,
     });
 
-    const { passwordHash, ...userWithoutPassword } = updatedUser;
-    return userWithoutPassword;
+    if (dto.deviceId) {
+      const existingUserAssignment = await this.prisma.userDevice.findUnique({
+        where: {
+          userId_deviceId: {
+            userId: id,
+            deviceId: dto.deviceId,
+          },
+        },
+      });
+
+      if (!existingUserAssignment) {
+        await this.prisma.userDevice.create({
+          data: {
+            userId: id,
+            deviceId: dto.deviceId,
+          },
+        });
+      }
+    }
+
+    const finalUser = await this.prisma.user.findUnique({
+      where: { id },
+      include: {
+        userDevices: true,
+      },
+    });
+
+    if (!finalUser) {
+      throw new NotFoundException('User not found');
+    }
+
+    const { passwordHash, ...userWithoutPassword } = finalUser;
+    return {
+      ...userWithoutPassword,
+      assignedDevices: finalUser.userDevices.map((ud) => ud.deviceId),
+    };
   }
 
   async deleteUser(id: string) {
