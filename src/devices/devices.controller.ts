@@ -1,7 +1,8 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UsePipes, ValidationPipe } from '@nestjs/common';
 import { DevicesService } from './devices.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
+import { PostReadingDto } from './dto/post-reading.dto';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
 @ApiTags('devices')
@@ -51,5 +52,17 @@ export class DevicesController {
   @ApiResponse({ status: 200, description: 'The device reboot signal has been sent.' })
   reboot(@Param('id') id: string) {
     return this.devicesService.reboot(id);
+  }
+
+  @Post(':id/readings')
+  @ApiOperation({ summary: 'Post telemetry/sensor reading data from a device' })
+  @ApiResponse({ status: 201, description: 'The reading has been successfully recorded and processed.' })
+  @ApiResponse({ status: 404, description: 'Device not found.' })
+  @UsePipes(new ValidationPipe({ transform: true }))
+  postReading(
+    @Param('id') id: string,
+    @Body() postReadingDto: PostReadingDto,
+  ) {
+    return this.devicesService.postReading(id, postReadingDto);
   }
 }
