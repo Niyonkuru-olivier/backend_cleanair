@@ -37,6 +37,7 @@ export class DevicesService {
         status: 'OFFLINE',
         installedAt: new Date(),
         uptime: '—',
+        safetyStatus: createDeviceDto.safetyStatus,
       },
     });
 
@@ -137,6 +138,7 @@ export class DevicesService {
       coOutput: dto.outputPpm,
       reduction: reductionPercentage,
       lastSeen: new Date(),
+      safetyStatus: status,
     };
 
     if (dto.uptime) updateData.uptime = dto.uptime;

@@ -46,6 +46,7 @@ model Device {
   ipAddress   String?       @db.VarChar(50) @map("ip_address")
   macAddress  String?       @db.VarChar(50) @map("mac_address")
   installedAt DateTime?     @map("installed_at")
+  safetyStatus SafetyStatus @default(NORMAL) @map("safety_status")
   
   userDevices UserDevice[]
   readings    Reading[]
@@ -127,4 +128,10 @@ enum AlertLevel {
   WARNING  @map("warning")
   CRITICAL @map("critical")
   RESOLVED @map("resolved")
+}
+
+enum SafetyStatus {
+  WARNING
+  NORMAL
+  CRITICAL
 }

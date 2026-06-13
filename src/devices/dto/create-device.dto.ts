@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsEnum, IsOptional, IsIP, IsMACAddress } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { VehicleType } from '@prisma/client';
+import { VehicleType, SafetyStatus } from '@prisma/client';
 
 export class CreateDeviceDto {
   @ApiProperty({ example: 'Toyota Corolla', description: 'Name or model of the device/vehicle' })
@@ -42,4 +42,9 @@ export class CreateDeviceDto {
   @IsOptional()
   @IsString()
   firmware?: string;
+
+  @ApiPropertyOptional({ enum: SafetyStatus, example: 'NORMAL', description: 'Safety status of the device' })
+  @IsOptional()
+  @IsEnum(SafetyStatus)
+  safetyStatus?: SafetyStatus;
 }
