@@ -2,9 +2,10 @@ import { Module } from '@nestjs/common';
 import { DevicesService } from './devices.service';
 import { DevicesController } from './devices.controller';
 import { PrismaModule } from '../prisma/prisma.module';
+import { MailModule } from '../mail/mail.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, MailModule],
   controllers: [DevicesController],
   providers: [DevicesService],
 })

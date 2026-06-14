@@ -72,4 +72,32 @@ export class MailService {
       throw error;
     }
   }
+
+  async sendDeviceAlertEmail(to: string, userName: string, deviceName: string, level: string, message: string) {
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL') || 'http://localhost:3000';
+    const systemName = 'CleanAir System';
+    const mailFrom = this.configService.get<string>('MAIL_FROM') || 'noreply@cleanairsystem.com';
+
+    const msg = {
+      to,
+      from: {
+        name: systemName,
+        email: mailFrom,
+      },
+      subject: `[${level.toUpperCase()} ALERT] Device ${deviceName} - ${level.toUpperCase()}`,
+      text: `Hi ${userName},\n\nThis is an automated alert notification from ${systemName}.\n\nDevice: ${deviceName}\nStatus: ${level.toUpperCase()}\n\nAlert Details:\n${message}\n\n👉 View details on your dashboard: ${frontendUrl}\n\nPlease take appropriate action.\n\n— The ${systemName} Team`,
+    };
+
+    try {
+      await sgMail.send(msg);
+      this.logger.log(`Device alert email sent to ${to} via SendGrid API`);
+    } catch (error) {
+      this.logger.error(`Failed to send device alert email to ${to}: ${error.message}`);
+      if (error.response) {
+        this.logger.error(JSON.stringify(error.response.body));
+      }
+      throw error;
+    }
+  }
 }
+

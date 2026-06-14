@@ -6,9 +6,10 @@ import { MailModule } from './mail/mail.module';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { DevicesModule } from './devices/devices.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
-  imports: [PrismaModule, MailModule, UsersModule, AuthModule, DevicesModule],
+  imports: [PrismaModule, MailModule, UsersModule, AuthModule, DevicesModule, NotificationsModule],
   controllers: [AppController],
   providers: [AppService],
 })

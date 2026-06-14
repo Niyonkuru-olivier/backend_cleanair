@@ -3,10 +3,14 @@ import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { PostReadingDto } from './dto/post-reading.dto';
 import { PrismaService } from '../prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class DevicesService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   private mapDevice(device: any) {
     const { ipAddress, macAddress, ...rest } = device;
@@ -151,6 +155,14 @@ export class DevicesService {
       data: updateData,
     });
 
+    // Fetch users assigned to this device to notify them
+    const assignments = await this.prisma.userDevice.findMany({
+      where: { deviceId: id },
+      include: {
+        user: true,
+      },
+    });
+
     let alert: any = null;
     if (status === 'WARNING' || status === 'CRITICAL') {
       const alertLevel = status === 'CRITICAL' ? 'CRITICAL' : 'WARNING';
@@ -160,8 +172,24 @@ export class DevicesService {
           level: alertLevel,
           message: `Device ${device.name || id} recorded a ${status.toLowerCase()} CO level. Input: ${dto.inputPpm} ppm, Output: ${dto.outputPpm} ppm (Reduction: ${reductionPercentage.toFixed(1)}%).`,
           location: device.location || 'Unknown',
+          isRead: false,
         },
       });
+
+      // Send alert emails to all assigned users
+      for (const assignment of assignments) {
+        if (assignment.user && assignment.user.email && assignment.user.status === 'ACTIVE') {
+          this.mailService.sendDeviceAlertEmail(
+            assignment.user.email,
+            assignment.user.name,
+            device.name || id,
+            alertLevel,
+            alert.message,
+          ).catch((err) => {
+            console.error(`Failed to send alert email to ${assignment.user.email}:`, err);
+          });
+        }
+      }
     }
 
     return {

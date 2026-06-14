@@ -86,6 +86,7 @@ model Alert {
   level     AlertLevel
   message   String     @db.Text
   location  String?    @db.VarChar(255)
+  isRead    Boolean    @default(false) @map("is_read")
   createdAt DateTime   @default(now()) @db.Timestamp(0) @map("created_at")
 
   device Device? @relation(fields: [deviceId], references: [id], onDelete: Cascade)
