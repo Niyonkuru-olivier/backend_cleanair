@@ -198,4 +198,68 @@ export class DevicesService {
       alert,
     };
   }
+
+  async getHistory(id: string, limit: number = 50, type: 'all' | 'reading' | 'alert' = 'all') {
+    const device = await this.prisma.device.findUnique({
+      where: { id },
+    });
+    if (!device) {
+      throw new NotFoundException(`Device with ID ${id} not found`);
+    }
+
+    const readingsPromise = (type === 'all' || type === 'reading')
+      ? this.prisma.reading.findMany({
+          where: { deviceId: id },
+          orderBy: { recordedAt: 'desc' },
+          take: limit,
+        })
+      : Promise.resolve<any[]>([]);
+
+    const alertsPromise = (type === 'all' || type === 'alert')
+      ? this.prisma.alert.findMany({
+          where: { deviceId: id },
+          orderBy: { createdAt: 'desc' },
+          take: limit,
+        })
+      : Promise.resolve<any[]>([]);
+
+    const [readings, alerts] = await Promise.all([readingsPromise, alertsPromise]);
+
+    const events: any[] = [];
+
+    if (type === 'all' || type === 'reading') {
+      readings.forEach((r) => {
+        events.push({
+          id: `reading-${r.id}`,
+          type: 'reading',
+          timestamp: r.recordedAt,
+          status: r.status,
+          message: `Sensor reading recorded: Input CO: ${r.inputPpm} ppm, Output CO: ${r.outputPpm} ppm (${r.reductionPercentage.toFixed(1)}% reduction).`,
+          data: {
+            inputPpm: r.inputPpm,
+            outputPpm: r.outputPpm,
+            reductionPercentage: r.reductionPercentage,
+          },
+        });
+      });
+    }
+
+    if (type === 'all' || type === 'alert') {
+      alerts.forEach((a) => {
+        events.push({
+          id: `alert-${a.id}`,
+          type: 'alert',
+          timestamp: a.createdAt,
+          status: a.level,
+          message: a.message,
+        });
+      });
+    }
+
+    // Sort combined events descending by timestamp (newest first)
+    events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+
+    // Slice to the requested limit
+    return events.slice(0, limit);
+  }
 }

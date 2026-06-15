@@ -1,9 +1,9 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UsePipes, ValidationPipe, Query } from '@nestjs/common';
 import { DevicesService } from './devices.service';
 import { CreateDeviceDto } from './dto/create-device.dto';
 import { UpdateDeviceDto } from './dto/update-device.dto';
 import { PostReadingDto } from './dto/post-reading.dto';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
 @ApiTags('devices')
 @Controller('devices')
@@ -64,5 +64,20 @@ export class DevicesController {
     @Body() postReadingDto: PostReadingDto,
   ) {
     return this.devicesService.postReading(id, postReadingDto);
+  }
+
+  @Get(':id/history')
+  @ApiOperation({ summary: 'Get unified simulation / alert history for a device' })
+  @ApiQuery({ name: 'limit', required: false, type: Number, description: 'Limit the number of events (default: 50)' })
+  @ApiQuery({ name: 'type', required: false, enum: ['all', 'reading', 'alert'], description: 'Filter events by type (default: all)' })
+  @ApiResponse({ status: 200, description: 'Return the unified chronological device history.' })
+  @ApiResponse({ status: 404, description: 'Device not found.' })
+  getHistory(
+    @Param('id') id: string,
+    @Query('limit') limit?: string,
+    @Query('type') type?: 'all' | 'reading' | 'alert',
+  ) {
+    const parsedLimit = limit ? parseInt(limit, 10) : 50;
+    return this.devicesService.getHistory(id, parsedLimit, type || 'all');
   }
 }
